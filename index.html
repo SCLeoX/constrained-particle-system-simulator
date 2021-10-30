@@ -1,0 +1,1820 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Constrained Particle System Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@600&display=swap" rel="stylesheet">
+  <style>
+    html {
+      color: #555;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    input {
+      font-family: 'Source Code Pro', monospace;
+      font-weight: 600;
+    }
+
+    .load-container {
+      position: fixed;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      backdrop-filter: blur(3px);
+      background-color: rgba(0, 0, 0, 0.2);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .load-text {
+      padding: 1em;
+      background-color: white;
+      box-shadow: rgb(0 0 0 / 12%) 0 0 4px, rgb(0 0 0 / 24%) 0 0 8px;
+      border-radius: 0.4em;
+    }
+
+    .control-panel-container {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background-color: #eee;
+      box-shadow: rgb(0 0 0 / 12%) 1px 0 2px, rgb(0 0 0 / 24%) 2px 0 3px;
+      border-radius: 1em;
+      margin-right: 1.6em;
+      width: 600px;
+      display: flex;
+      transition: transform 0.3s ease-in-out;
+      z-index: 5;
+    }
+
+    .control-panel {
+      flex: 1;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .control-panel-switch {
+      width: 1.6em;
+      vertical-align: middle;
+      line-height: 100vh;
+      border-top-right-radius: 1em;
+      border-bottom-right-radius: 1em;
+      cursor: pointer;
+      text-align: center;
+      border-left: dashed 1px #ccc;
+    }
+
+    .control-panel-scroll {
+      overflow-y: scroll;
+      overflow-x: hidden;
+      flex: 1;
+      padding: 0 1em 1em 1em;
+    }
+
+    .control-panel-switch:hover {
+      background-color: #f5f5f5;
+    }
+
+    .control-panel-switch:active {
+      background-color: #ddd;
+    }
+
+    .title-group-container {
+      display: flex;
+      justify-content: center;
+      margin: 2em 0 1em 0;
+    }
+
+    .title-group {
+      display: inline-block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 1.7em;
+    }
+
+    .subtitle-container {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .subtitle {
+      color: #777;
+      margin: 0;
+      font-size: 1em;
+    }
+
+    h3 {
+      margin: 0.8em 0 0.4em 0;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+    }
+
+    .input-group {
+      flex: 1;
+      display: flex;
+      margin: 0 0 0.4em 1em;
+      font-size: 1.2em;
+    }
+
+    .input-group>input {
+      flex: 1;
+      margin-left: 0.5em;
+      padding: 0.2em;
+      outline: none;
+    }
+
+    .indent {
+      margin-left: 1em;
+    }
+
+    .input-h-group {
+      display: flex;
+      margin-bottom: -0.4em;
+    }
+
+    .integrator {
+      background-color: #ddd;
+      margin: 0.5em 0;
+      padding: 0.6em;
+      border-radius: 0.6em;
+    }
+
+    .integrator-title {
+      display: flex;
+    }
+
+    .integrator-title>h3 {
+      margin: 0 0 0 0.3em;
+
+    }
+
+    .graph-svg {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    p {
+      text-align: justify;
+      margin: 0.4em 0 0 0;
+    }
+
+    button {
+      margin-top: 1em;
+    }
+
+    .error {
+      font-size: 0.8em;
+      font-weight: 600;
+      display: none;
+      white-space: pre-wrap;
+      font-family: 'Source Code Pro', monospace;
+      text-align: left;
+      word-break: break-all;
+      position: fixed;
+      right: 1em;
+      bottom: 1em;
+      z-index: 500;
+      color: white;
+      background-color: #b33;
+      padding: 1em;
+      border-radius: 1em;
+    }
+
+    .output {
+      font-size: 0.8em;
+      color: #777;
+      font-weight: 600;
+      white-space: pre-wrap;
+      font-family: 'Source Code Pro', monospace;
+      text-align: left;
+      word-break: break-all;
+    }
+
+    .fine-print {
+      font-size: 0.7em;
+      color: #777;
+    }
+
+    .color-indicator {
+      width: 0.8em;
+      height: 0.8em;
+      border-radius: 50%;
+      position: relative;
+      top: 0.2em;
+      margin-left: 0.2em;
+    }
+
+    .examples-container {
+      margin-top: -0.2em;
+    }
+
+    .examples-container button {
+      margin-top: 0.4em;
+    }
+
+    .examples-container li {
+      margin-left: -15px;
+    }
+
+    .editor-container {
+      margin-top: 0.5em;
+      height: 100px;
+      border-radius: 1em;
+      overflow: hidden;
+    }
+
+    .math-output {
+      overflow-x: auto;
+      background-color: #e5e5e5;
+      border-radius: 1em;
+      padding: 1em;
+    }
+  </style>
+  <!-- <script> -->
+  <script id="pyodide-worker" type="javascript/worker">
+    self.postMessage({ type: 'load', value: 'Downloading pyodide.js...' });
+    importScripts("https://cdn.jsdelivr.net/pyodide/v0.18.1/full/pyodide.js");
+
+    async function workerMain() {
+      self.postMessage({ type: 'load', value: 'Loading Python runtime...' });
+      const pyodide = await loadPyodide({
+        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.18.1/full/",
+      });
+      self.postMessage({ type: 'load', value: 'Loading sympy...' });
+      await pyodide.loadPackage('sympy');
+      self.postMessage({ type: 'load', value: 'Loading numpy...' });
+      await pyodide.loadPackage('numpy');
+      self.postMessage({ type: 'load', value: 'Initializing Python environment...' });
+      pyodide.runPython(`
+        from sympy import *
+        from sympy.parsing.sympy_parser import parse_expr
+        from sympy.parsing.sympy_parser import standard_transformations
+        from sympy.utilities.lambdify import implemented_function
+        transformations = standard_transformations
+        import numpy
+        import numpy as np
+        class Particle:
+          def __init__(self, index, positions, velocities, mass, Q, Q_all):
+            self._index = index
+            self._positions = positions
+            self._velocities = velocities
+            self.mass = mass
+            self._Q = Q
+            self._Q_all = Q_all
+
+          @property
+          def x(self):
+            return self._positions[self._index * 2]
+
+          @property
+          def y(self):
+            return self._positions[self._index * 2 + 1]
+
+          @property
+          def vx(self):
+            return self._velocities[self._index * 2]
+
+          @property
+          def vy(self):
+            return self._velocities[self._index * 2 + 1]
+          
+          def apply_force(self, x_force, y_force):
+            self._Q[self._index * 2][0] += x_force
+            self._Q[self._index * 2 + 1][0] += y_force
+            self._Q_all.append([self._index, x_force, y_force])
+      `)
+      self.postMessage({ type: 'load', value: 'Warming up Python environment...' });
+      if (pyodide.runPython(`
+        str(parse_expr("5 * x+6 * y", transformations=transformations))
+      `) !== '5*x + 6*y') {
+        throw new Error('Sympy sanity check failed.');
+      }
+      if (pyodide.runPython(`
+        str(np.array([[1,2]]) @ np.array([[3],[4]]))
+      `) !== '[[11]]') {
+        throw new Error('Numpy sanity check failed.');
+      }
+      self.postMessage({ type: 'loadEnd' });
+      self.addEventListener('message', event => {
+        const data = event.data;
+        switch (data.type) {
+          case 'evalPython':
+            try {
+              if (data.context !== undefined) {
+                for (const key of Object.keys(data.context)) {
+                  self[key] = data.context[key];
+                }
+              }
+              const resultPython = pyodide.runPython(data.python);
+              const result = (resultPython === undefined)
+                ? undefined
+                : (resultPython.toJs === undefined)
+                  ? resultPython
+                  : resultPython.toJs({
+                    dict_converter: Object.fromEntries,
+                  });
+              // console.warn(result);
+              self.postMessage({ type: 'evalResult', result });
+            } catch (error) {
+              self.postMessage({ type: 'evalResult', error });
+            }
+            break;
+        }
+      });
+    }
+
+    workerMain().catch(error => self.postMessage({ type: 'error', error: error.message }));
+  </script>
+</head>
+
+<body>
+  <div id="load-container" class="load-container">
+    <div class="load-text" id="load-text">
+      Loading JavaScript...
+    </div>
+  </div>
+  <div id="control-panel-container" class="control-panel-container">
+    <div class="control-panel">
+      <div class="title-group-container">
+        <div class="title-group">
+          <h1 class="title">Constrained Particle System Simulator</h1>
+          <div class="subtitle-container">
+            <h2 class="subtitle">By Rin Tepis</h2>
+            <h2 class="subtitle"></h2>
+          </div>
+        </div>
+      </div>
+      <div class="control-panel-scroll">
+        <h3>Simulation Settings:</h3>
+        <div class="input-group">
+          <label for="time-step-input">Time step = </label>
+          <input name="time-step-input" id="time-step-input" type="text" value="0.01">
+        </div>
+        <p class="indent" style="font-size: 1.2em;" id="speed-label">Animation speed = 1.00x</p>
+        <div class="input-h-group">
+          <div class="input-group">
+            <input style="margin: 0 10px 0 0" name="speed-input" id="speed-input" type="range" min="0" max="10"
+              value="1" step="0.01">
+            <button id="pause-button" style="margin: 0; width: 51px;">Pause</button>
+            <button id="reset-speed-button" style="margin: 0 0 0 0.8em; width: 51px;">Reset</button>
+          </div>
+        </div>
+        <p class="indent" style="font-size: 1.2em;" id="frame-label">Frame = </p>
+        <div class="input-h-group">
+          <div class="input-group">
+            <input style="margin: 0 10px 0 0" name="frame-input" id="frame-input" type="range" min="0" max="10"
+              value="1" step="0.01">
+          </div>
+        </div>
+        <p class="indent" style="font-size: 1.2em; margin-bottom: 0.2em;">Integrator:</p>
+        <div class="indent">
+          <input type="radio" id="integrator-1" name="integrator" value="1">
+          <label for="integrator-1" style="margin-right: 1em">Explicit Euler</label>
+
+          <input type="radio" id="integrator-2" name="integrator" value="2">
+          <label for="integrator-2" style="margin-right: 1em">Midpoint Method</label>
+
+          <input type="radio" id="integrator-3" name="integrator" value="3" checked>
+          <label for="integrator-3">RK4</label>
+        </div>
+
+        <h3>Feedback Terms:</h3>
+        <div class="input-h-group">
+          <div class="input-group">
+            <label for="ks-input">ks = </label>
+            <input name="ks-input" id="ks-input" type="number" value="1">
+          </div>
+          <div class="input-group">
+            <label for="kd-input">kd = </label>
+            <input name="kd-input" id="kd-input" type="number" value="1">
+          </div>
+        </div>
+        <h3>Constraint System:</h3>
+        <p>Please define the particles, constraints, and rendering options in the code editor below using Constrained
+          Particle System Simulator Language (CPSSL), a simple domain specific language I created for this project:</p>
+        <div id="system-editor-container" class="editor-container"></div>
+        <h3>Forces:</h3>
+        <p>Please define forces in the code editor below using Python:</p>
+        <div id="forces-editor-container" class="editor-container"></div>
+        <h3>Visibilities:</h3>
+        <input id="show-axises" name="show-axises" type="checkbox">
+        <label for="show-axises">Show axises</label>
+        <br />
+        <input id="show-crosshair" name="show-crosshair" type="checkbox">
+        <label for="show-crosshair">Show crosshair</label>
+        <br />
+        <input id="show-points" name="show-points" type="checkbox" checked="checked">
+        <label for="show-points">Show points</label>
+        <br />
+        <input id="show-vectors" name="show-vectors" type="checkbox" checked="checked">
+        <label for="show-vectors">Show force vectors</label>
+        <br />
+        <input id="show-dynamic-draws" name="show-dynamic-draws" type="checkbox" checked="checked">
+        <label for="show-dynamic-draws">Show dynamic draws</label>
+        <br />
+        <input id="show-static-draws" name="show-static-draws" type="checkbox" checked="checked">
+        <label for="show-static-draws">Show static draws</label>
+        <h3>Simulator Status:</h3>
+        <p id="main-status"></p>
+        <p id="error-output" class="error"></p>
+        <p>Particle positions:</p>
+        <p class="output" id="particle-positions"></p>
+        <p>Constraint error values:</p>
+        <p class="output" id="constraint-error-values"></p>
+        <p>Intermediary expressions:</p>
+        <p class="math-output" id="math-output"></p>
+        <h3>Examples:</h3>
+        <ul class="examples-container" id="examples-container"></ul>
+        <h3>Web Worker Status:</h3>
+        <p id="web-worker-evaluating">Currently running: False</p>
+        <p id="web-worker-queue-status">Tasks in queue: 0</p>
+        <p class="fine-print">This program uses a <a target="_blank"
+            href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API">Web Worker</a> (essentially a
+          separate thread) to run a <a target="_blank" href="https://pyodide.org/en/stable/">fully emulated Python
+            environment</a>, as JavaScript ecosystem lacks libraries that are suitable for scientific computations.
+          Unfortunately, due to <a target="_blank"
+            href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements">technical
+            limitations</a>, I cannot terminate a python computation from the main thread without restarting the entire
+          Web Worker. Therefore, if the Python environment is stuck (for example, when evaluating an impossible
+          integral, and for some reason sympy cannot tell that it is incapable of solving it), you have to manually
+          press the "Restart Web Worker" button below.</p>
+        <button id="restart-web-worker-button">Restart Web Worker</button>
+      </div>
+    </div>
+    <div id="control-panel-switch" class="control-panel-switch">◀</div>
+  </div>
+
+  <svg id="svg" class="graph-svg" xmlns="http://www.w3.org/2000/svg">
+    <style>
+      .hidden {
+        display: none;
+      }
+
+      .hide-trail .trail {
+        display: none;
+      }
+
+      .hide-points .point {
+        display: none;
+      }
+
+      .hide-vectors .vectors {
+        display: none;
+      }
+
+      .hide-axises .axises {
+        display: none;
+      }
+
+      .hide-dynamic-draws .svg-draws-container {
+        display: none;
+      }
+
+      .hide-static-draws .svg-static-draws-container {
+        display: none;
+      }
+    </style>
+    <g id="graph-panzoom-root" class="hide-axises" transform="matrix(207 0 0 207 1160 460)">
+      <path class="axises" id="axises" stroke="rgb(200, 200, 200)"></path>
+      <g class="svg-draws-container" id="svg-draws-container"></g>
+      <g class="svg-static-draws-container" id="svg-static-draws-container"></g>
+      <path class="vectors" id="vectors" fill="none" stroke="blue"></path>
+      <g id="points-container"></g>
+    </g>
+    <path id="crosshair-path" class="hidden" stroke="black"></path>
+    <text id="crosshair-x" class="hidden">x: 0</text>
+    <text id="crosshair-y" class="hidden">y: 0</text>
+  </svg>
+
+  <script src='https://unpkg.com/panzoom@9.4.0/dist/panzoom.min.js'></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.29.1/min/vs/loader.min.js"
+    integrity="sha512-6SVkpjNKF/xjZAlDnXErfscTEjSypb3CuIg2wooYuRCLrpMu03YBbuhCc5UQzCPTtGXLnA4qPpEPe8Jft8G4tg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script type="text/javascript" id="MathJax-script"
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    const $vectors = document.getElementById('vectors');
+    const $mathOutput = document.getElementById('math-output');
+    const $svg = document.getElementById('svg');
+    const $pointsContainer = document.getElementById('points-container');
+    const $svgDrawsContainer = document.getElementById('svg-draws-container');
+    const $svgStaticDrawsContainer = document.getElementById('svg-static-draws-container');
+    const $webWorkerEvaluating = document.getElementById('web-worker-evaluating');
+    const $webWorkerQueueStatus = document.getElementById('web-worker-queue-status');
+
+    /** New SVG node */
+    function nsn(tagName, attributes) {
+      var node = document.createElementNS('http://www.w3.org/2000/svg', tagName);
+      for (const [key, value] of Object.entries(attributes)) {
+        node.setAttribute(key, value);
+      }
+      return node;
+    }
+
+    function isSafeNumber(n) {
+      return Math.abs(n) < 1e6;
+    }
+    function clampNumber(n) {
+      return n;
+    }
+
+    function dedent(input) {
+      let commonIndent = 10000;
+      const split = input.split('\n');
+      for (const line of split) {
+        const match = line.match(/^[ \t]*(?=\S)/gm);
+        if (match === null) {
+          continue;
+        }
+        commonIndent = Math.min(commonIndent, match[0].length);
+      }
+      const result = [];
+      for (const line of split) {
+        result.push(line.substr(commonIndent));
+      }
+      return result.join('\n');
+    }
+
+    const $panzoomRoot = document.getElementById('graph-panzoom-root');
+    const pz = panzoom($panzoomRoot, {
+      maxZoom: 10000,
+      minZoom: 0.01,
+    });
+    const $controlPanelSwitch = document.getElementById('control-panel-switch');
+    const $controlPanelContainer = document.getElementById('control-panel-container');
+    let cpOpen = true;
+    $controlPanelSwitch.addEventListener('click', () => {
+      if (cpOpen) {
+        $controlPanelContainer.style.transform = 'translateX(calc(-600px + 1.6em))';
+        $controlPanelSwitch.innerText = '▶';
+        cpOpen = false;
+      } else {
+        $controlPanelContainer.style.transform = 'translateX(0)';
+        $controlPanelSwitch.innerText = '◀';
+        cpOpen = true;
+      }
+    });
+
+    const $loadText = document.getElementById('load-text');
+    const $loadContainer = document.getElementById('load-container');
+    async function main() {
+      const pyodideBlob = new Blob([document.getElementById('pyodide-worker').textContent], { type: "text/javascript" });
+      let pyodideWorker = new Worker(window.URL.createObjectURL(pyodideBlob));
+      const evalQueue = [];
+      let currentTask = null;
+      let evaluating = false;
+      function updateQueueStatus() {
+        $webWorkerEvaluating.innerText = `Currently running: ${evaluating ? 'True' : 'False'}`;
+        $webWorkerQueueStatus.innerText = `Tasks in queue: ${evalQueue.length + (+evaluating)}`;
+      }
+      function startQueue() {
+        if (evaluating) {
+          return;
+        }
+        if (evalQueue.length === 0) {
+          return;
+        }
+        evaluating = true;
+        currentTask = evalQueue.shift();
+        updateQueueStatus();
+        const { python, context, onStart } = currentTask;
+        if (onStart !== undefined) {
+          onStart();
+        }
+        pyodideWorker.postMessage({ type: 'evalPython', python, context });
+      }
+      function evalPython(python, context, onStart) {
+        let resolve;
+        let reject;
+        const promise = new Promise((r1, r2) => { resolve = r1; reject = r2; });
+        const task = {
+          python,
+          context,
+          onStart,
+          resolve,
+          reject,
+        };
+        evalQueue.push(task);
+        updateQueueStatus();
+        promise.cancel = () => {
+          const index = evalQueue.indexOf(task);
+          if (index !== -1) {
+            evalQueue.splice(index, 1);
+            updateQueueStatus();
+          }
+        };
+        startQueue();
+        return promise;
+      }
+      function loadWebWorker() {
+        return new Promise(resolve => {
+          pyodideWorker.addEventListener('message', event => {
+            const msg = event.data;
+            switch (msg.type) {
+              case 'load':
+                $loadText.innerText = msg.value;
+                break;
+              case 'loadEnd':
+                $loadContainer.style.display = 'none';
+                resolve();
+                break;
+              case 'error':
+                $loadText.innerText = msg.error;
+                break;
+              case 'evalResult':
+                if (msg.error !== undefined) {
+                  currentTask.reject(new Error(msg.error));
+                } else {
+                  currentTask.resolve(msg.result);
+                }
+                evaluating = false;
+                updateQueueStatus();
+                startQueue();
+                break;
+            }
+          });
+        });
+      }
+      $loadText.innerText = 'Loading Monaco editor...'
+      await loadWebWorker();
+      // $loadContainer.style.display = 'none';
+
+      const $examplesContainer = document.getElementById('examples-container');
+      const examples = [
+        {
+          name: 'Introduction with Tinkertoy (default)',
+          cpssl: dedent(`\
+            # To demonstrate the basics of Let's recreate the
+            # two-particle system in the assignment.
+
+            # First, we need to define two particles:
+            particle x1, y1 at 0.6, 0.8
+            particle x2, y2 at 0.6, 0.3
+
+            # Next, we need to define the two constraints:
+            constraint x1^2 + y1^2 = 1^2
+            constraint (x2 - x1)^2 + (y2 - y1)^2 = 0.5^2
+
+            # Finally, we need to declare what to draw (in addition
+            # to the particles):
+            draw circle(0, 0, 1)
+            draw segment(x1, y1, x2, y2)
+
+            # A more in-depth "tutorial" of CPSSL can be found in 
+            # the Examples section below, with name "More CPSSL".`),
+          forces: dedent(`\
+            # You can write python here.
+            def accumulate_forces(particles):
+              # \`particles\` is an array of particles
+              for particle in particles:
+                # You can apply a force to a particle using the
+                # \`apply_force\` method
+                particle.apply_force(0, -9.8 * particle.mass)
+                # You can access a particle's position, velocities,
+                # and masses using \`particle.x\`, \`particle.y\`, 
+                # \`particle.vx\`, \`particle.vy\`, and \`particle.mass\``),
+        }, {
+          name: 'More CPSSL',
+          cpssl: dedent(`\
+            # Here are some of the more "advanced" features of this
+            # simulator (and CPSSL):
+
+            # Particles can have mass (defaults to 1). You can define
+            # mass like so:
+            particle x1, y1 at 0.6, 0.8 with mass = 1.5
+            particle x2, y2 at 0.6, 0.3 with mass = 2
+
+            # You can define "auto" constraints. "Auto" constraints
+            # are constraints without eqaulity. This simulator will
+            # evaluate the value of the constraint with initial
+            # conditions, and use it as the rhs.
+            #
+            # You can define auto constraints like so:
+            constraint auto x1^2 + y1^2
+            constraint auto (x2 - x1)^2 + (y2 - y1)^2
+
+            draw segment(x1, y1, x2, y2)
+
+            # You can define a draw command to be "static". If
+            # static, it will only be rendered once at the beginning,
+            # which is perfect for that static circle.
+            draw static circle(0, 0, 1)
+
+            # You can also draw lines
+            draw line(0, 0, x1, y1)
+
+            # ...and functions with respect to x. The four parameters
+            # are: funcx(function, x0, x1, n_samples).
+            draw static funcx(sin(x) + 2, -10, 10, 200)
+
+            # Similarly, funcy also exists.
+            draw static funcy(exp(y - 3) + 2, -10, 10, 200)`),
+          forces: dedent(`\
+            # This demonstrates more than one forces
+            def accumulate_forces(particles):
+              for particle in particles:
+                particle.apply_force(0, -9.8 * particle.mass)
+                particle.apply_force(-particle.vx, -particle.vy)`),
+        }, {
+          name: 'Long chain',
+          cpssl: dedent(`\
+            # Let's build a long chain!
+            particle x1, y1 at 0.5, 0
+            particle x2, y2 at 1.0, 0
+            particle x3, y3 at 1.5, 0
+            particle x4, y4 at 2.0, 0
+            particle x5, y5 at 2.5, 0
+            particle x6, y6 at 3.0, 0
+
+            constraint auto x1^2 + y1^2
+            constraint auto (x2 - x1)^2 + (y2 - y1)^2
+            constraint auto (x3 - x2)^2 + (y3 - y2)^2
+            constraint auto (x4 - x3)^2 + (y4 - y3)^2
+            constraint auto (x5 - x4)^2 + (y5 - y4)^2
+            constraint auto (x6 - x5)^2 + (y6 - y5)^2
+
+            draw segment(0, 0, x1, y1)
+            draw segment(x1, y1, x2, y2)
+            draw segment(x2, y2, x3, y3)
+            draw segment(x3, y3, x4, y4)
+            draw segment(x4, y4, x5, y5)
+            draw segment(x5, y5, x6, y6)
+            `),
+          forces: dedent(`\
+            def accumulate_forces(particles):
+              for particle in particles:
+                particle.apply_force(0, -9.8 * particle.mass)`),
+        }, {
+          name: 'Rigid body?',
+          cpssl: dedent(`\
+            particle x1, y1 at -2, 1
+            particle x2, y2 at 2, 1
+            particle x3, y3 at -2, -1
+            particle x4, y4 at 2, -1
+
+            constraint auto x1^2 + y1^2
+            constraint auto (x1 - x2)^2 + (y1 - y2)^2
+            constraint auto (x1 - x3)^2 + (y1 - y3)^2
+            constraint auto (x1 - x4)^2 + (y1 - y4)^2
+            constraint auto (x2 - x3)^2 + (y2 - y3)^2
+            constraint auto (x2 - x4)^2 + (y2 - y4)^2
+            # constraint auto (x3 - x4)^2 + (y3 - y4)^2
+            # Uncomment the above line will cause instability
+            # immediately.
+
+            draw segment(x1, y1, x2, y2)
+            draw segment(x1, y1, x3, y3)
+            draw segment(x1, y1, x4, y4)
+            draw segment(x2, y2, x3, y3)
+            draw segment(x2, y2, x4, y4)
+            draw segment(x3, y3, x4, y4)
+            draw static circle(0, 0, sqrt(5))`),
+          forces: dedent(`\
+            def accumulate_forces(particles):
+              for particle in particles:
+                particle.apply_force(0, -9.8 * particle.mass)`),
+        }, {
+          name: 'Riding on sine wave',
+          cpssl: dedent(`\
+            particle x1, y1 at 0, 0
+            particle x2, y2 at 0, 1
+
+            constraint y1 = sin(x1)
+            constraint auto (x2 - x1)^2 + (y2 - y1)^2
+
+            draw segment(x1, y1, x2, y2)
+            draw static funcx(sin(x), -10, 50, 400)`),
+          forces: dedent(`\
+            def accumulate_forces(particles):
+              for particle in particles:
+                particle.apply_force(0, -9.8 * particle.mass)
+              particles[0].apply_force(12, 0)`),
+        }, {
+          name: 'Smile face',
+          cpssl: dedent(`\
+            # This is just to demonstrate that you can draw stuff
+
+            particle x1, y1 at 0.6, 0.8
+            particle x2, y2 at 0.6, 0.3
+
+            constraint auto x1^2 + y1^2
+            constraint auto (x2 - x1)^2 + (y2 - y1)^2
+
+            draw static circle(0, 0, 1)
+            draw static circle(-0.4, 0.3 ,0.2)
+            draw static circle(0.4, 0.3 ,0.2)
+            draw static funcx(x^2 - 0.5, -0.4, 0.4, 10)
+            draw segment(x1, y1, x2, y2)`),
+          forces: dedent(`\
+            def accumulate_forces(particles):
+              for particle in particles:
+                particle.apply_force(0, -9.8 * particle.mass)`),
+        },
+      ];
+
+      require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.29.1/min/vs' } });
+      await new Promise(resolve => {
+        require(['vs/editor/editor.main'], resolve);
+      });
+
+      monaco.languages.register({ id: 'cpssl' });
+      monaco.languages.setMonarchTokensProvider('cpssl', {
+        keywords: ['particle', 'constraint', 'draw', 'at', 'with', 'mass', 'static', 'auto'],
+        functions: ['circle', 'segment', 'line', 'funcx', 'funcy', 'sin', 'cos', 'tan', 'cot', 'sec', 'csc', 'sinc', 'asin', 'acos', 'atan', 'acot', 'asec', 'acsc', 'atan2', 'exp', 'log', 'sqrt', 'root', 'cbrt'],
+        tokenizer: {
+          root: [
+            [/\/\/.*$/, 'comment'],
+            [/#.*$/, 'comment'],
+            [/\d+/, 'number.float'],
+            [/[=><!~?:&|+\-*\/\^%]+/, 'operator'],
+            [/[()]+/, 'parentheses'],
+            [/[a-z_$][\w$]*/, {
+              cases: {
+                '@keywords': 'keyword',
+                '@functions': 'function',
+                '@default': 'identifier',
+              }
+            }],
+          ],
+        }
+      });
+      monaco.editor.defineTheme('vsExtended', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [
+          { token: 'keyword', fontStyle: 'bold' },
+          { token: 'function', foreground: 'FFAB2A' },
+          { token: 'parentheses', fontStyle: 'bold' },
+          { token: 'operator', foreground: 'AAAAAA' },
+        ]
+      });
+      const cpsslModel = monaco.editor.createModel('', 'cpssl');
+
+      const $systemEditorContainer = document.getElementById('system-editor-container');
+      const $forcesEditorContainer = document.getElementById('forces-editor-container');
+
+      const cpsslEditor = monaco.editor.create($systemEditorContainer, {
+        model: cpsslModel,
+        minimap: {
+          enabled: false,
+        },
+        theme: 'vsExtended',
+        wordWrap: 'on',
+        scrollBeyondLastLine: false,
+        scrollbar: {
+          alwaysConsumeMouseWheel: false,
+        },
+      });
+
+      const forcesModel = monaco.editor.createModel('', 'python');
+
+      const forcesEditor = monaco.editor.create(document.getElementById('forces-editor-container'), {
+        model: forcesModel,
+        minimap: {
+          enabled: false,
+        },
+        theme: 'vsExtended',
+        wordWrap: 'on',
+        scrollBeyondLastLine: false,
+        scrollbar: {
+          alwaysConsumeMouseWheel: false,
+        },
+      });
+
+      function loadExample(example) {
+        cpsslModel.setValue(example.cpssl);
+        forcesModel.setValue(example.forces);
+      }
+      for (const example of examples) {
+        const $btn = document.createElement('button');
+        $btn.innerText = example.name;
+        $btn.addEventListener('click', () => {
+          loadExample(example);
+          update();
+        });
+        const $li = document.createElement('li');
+        $li.appendChild($btn);
+        $examplesContainer.appendChild($li);
+      }
+      loadExample(examples[0]);
+
+      const $mainStatus = document.getElementById('main-status');
+      const $errorOutput = document.getElementById('error-output');
+
+      const particles = [];
+      const constraints = [];
+      const drawCommands = [];
+      const staticDrawCommands = [];
+      const cpsslErrors = [];
+      const $svgPoints = [];
+      const $svgDraws = [];
+      const $svgStaticDraws = [];
+      let forceFunction = '';
+      let speed = 1;
+      let timeStep = 0.01;
+      let ks = 1;
+      let kd = 1;
+      let currentFrameFloat = 0;
+      const frames = [];
+      let currentUpdateId = 0;
+      let currentInitializerPromise = null;
+      let shouldAnimate = false;
+      let integrator = 3;
+      let revertSpeed = null;
+
+      let batchPromise = null;
+      let batchUpdateId = null;
+
+      let lineWidth = 3 / 207;
+
+      const $paths = new Set();
+
+      const $axises = document.getElementById('axises');
+      $paths.add($axises);
+
+      const $frameInput = document.getElementById('frame-input');
+      const $frameLabel = document.getElementById('frame-label');
+      function framesUpdated() {
+        if (frames.length === 0) {
+          $frameInput.disabled = true;
+        } else {
+          $frameInput.disabled = false;
+          $frameInput.max = frames.length;
+        }
+        $frameInput.value = Math.floor(currentFrameFloat);
+        $frameLabel.innerText = `Frame = ${Math.floor(currentFrameFloat)} (${frames.length} buffered)`;
+      }
+      $frameInput.addEventListener('input', () => {
+        currentFrameFloat = $frameInput.value;
+      });
+      let oldSpeed = 1;
+      $frameInput.addEventListener('mouseenter', () => {
+        oldSpeed = speed;
+        speed = 0;
+      });
+      $frameInput.addEventListener('mouseleave', () => {
+        speed = oldSpeed;
+      });
+      framesUpdated();
+
+      function updateLineWidth() {
+        const scale = pz.getTransform().scale;
+        lineWidth = 3 / scale;
+        for (const $point of $svgPoints) {
+          $point.setAttribute('r', lineWidth * 2);
+        }
+        for (const $svgDraw of $svgDraws) {
+          $svgDraw.setAttribute('stroke-width', lineWidth);
+        }
+        for (const $svgDraw of $svgStaticDraws) {
+          $svgDraw.setAttribute('stroke-width', lineWidth);
+        }
+        for (const $path of $paths) {
+          $path.setAttribute('stroke-width', lineWidth);
+        }
+        $vectors.setAttribute('stroke-width', lineWidth);
+      }
+      updateLineWidth();
+      updateGrid();
+      pz.on('zoom', () => {
+        updateLineWidth();
+        updateGrid();
+        updateCrosshair();
+      });
+
+      pz.on('pan', () => {
+        updateGrid();
+        updateCrosshair();
+      });
+
+      function update() {
+        if (revertSpeed !== null) {
+          speed = revertSpeed;
+          $speedInput.value = speed;
+          $speedLabel.innerText = `Animation speed = ${speed.toFixed(2)}x`;
+          revertSpeed = null;
+        }
+        currentFrameFloat = 0;
+        const updateId = ++currentUpdateId;
+        if (batchPromise !== null) {
+          batchPromise.cancel();
+          batchUpdateId = null;
+          batchPromise = null;
+        }
+        $mainStatus.innerText = 'Status: Initializing';
+        $errorOutput.style.display = 'none';
+        $errorOutput.innerText = '';
+        shouldAnimate = false;
+        frames.length = 0;
+        framesUpdated();
+        if (currentInitializerPromise !== null) {
+          currentInitializerPromise.cancel();
+        }
+        currentInitializerPromise = evalPython(dedent(forceFunction) + '\n' + dedent(`
+          from js import particles_js, constraint_exprs, static_draw_exprs, draw_exprs, time_step, ks, kd, integrator
+          n_particles = len(particles_js)
+          n_constraints = len(constraint_exprs)
+          Q = np.zeros((n_particles * 2, 1)) # Force accumulator
+          Q_all = []
+          particles = []
+          positions_array = []
+          velocities = np.zeros(n_particles * 2)
+          for particle_js in particles_js:
+            positions_array.append(float(particle_js.xInit))
+            positions_array.append(float(particle_js.yInit))
+          positions = np.array(positions_array)
+
+          position_symbols = []
+          position_symbols_nondependent = []
+          particle_index = 0
+          t = symbols("t")
+          for particle_js in particles_js:
+            particles.append(Particle(particle_index, positions, velocities, float(particle_js.mass), Q, Q_all))
+            position_symbols.append(Function(particle_js.xName)(t))
+            position_symbols.append(Function(particle_js.yName)(t))
+            position_symbols_nondependent.append(symbols(particle_js.xName))
+            position_symbols_nondependent.append(symbols(particle_js.yName))
+            particle_index = particle_index + 1
+
+          # position_symbols = [Function("position_" + str(i))(t) for i in range(0, n_particles * 2)]
+          velocity_symbols = [Derivative(position_symbol, t) for position_symbol in position_symbols]
+          c_values = []
+          constraint_index = 0
+          for constraint_expr in constraint_exprs:
+            constraint_index = constraint_index + 1
+            constraint = parse_expr(constraint_expr, transformations=transformations)
+            if type(constraint) == Eq:
+              c_value = constraint.lhs - constraint.rhs
+            else:
+              c_value = constraint - lambdify([position_symbols_nondependent], constraint, "numpy")(positions)
+            # Replace with time dependent symbols
+            particle_index = 0
+            for particle_js in particles_js:
+              c_value = c_value.subs(symbols(particle_js.xName), position_symbols[particle_index * 2])
+              c_value = c_value.subs(symbols(particle_js.yName), position_symbols[particle_index * 2 + 1])
+              particle_index = particle_index + 1
+            c_values.append(c_value)
+          symbol_C = Matrix([[c_value] for c_value in c_values])
+          eval_C = lambdify([position_symbols], symbol_C, "numpy")
+          symbol_J = Matrix([[entry_symbol_C.diff(position_symbol) for position_symbol in position_symbols] for entry_symbol_C in symbol_C])
+          eval_J = lambdify([position_symbols], symbol_J, "numpy")
+          symbol_Cdot = symbol_C.diff(t)
+          eval_Cdot = lambdify([position_symbols, velocity_symbols], symbol_Cdot, "numpy")
+          symbol_Jdot = symbol_J.diff(t)
+          eval_Jdot = lambdify([position_symbols, velocity_symbols], symbol_Jdot, "numpy")
+          W = np.zeros((n_particles * 2, n_particles * 2))
+          for particle in particles:
+            W[particle._index * 2][particle._index * 2] = 1 / particle.mass
+            W[particle._index * 2 + 1][particle._index * 2 + 1] = 1 / particle.mass
+
+          def eval_derivative(positions, velocities):
+            C = eval_C(positions)
+            Cdot = eval_Cdot(positions, velocities)
+            J = eval_J(positions)
+            Jdot = eval_Jdot(positions, velocities)
+            lambda_v = np.linalg.inv(J @ W @ np.transpose(J)) @ (-Jdot @ velocities.reshape(-1, 1) - J @ W @ Q - ks * C - kd * Cdot)
+            Qhat = np.transpose(J) @ lambda_v
+            positions_derivative = velocities.reshape(-1)
+            velocities_derivative = (W @ (Qhat + Q)).reshape(-1)
+            return positions_derivative, velocities_derivative
+          def explicit_euler(dt):
+            """Advances the positions and velocities by dt using the Euler method."""
+            global positions, velocities
+            # modifies positions, velocities
+            dp, dv = eval_derivative(positions, velocities)
+            positions += dt * dp
+            velocities += dt * dv
+
+          def mid_point(dt):
+            """Advances the positions and velocities by dt using the Midpoint method."""
+            global positions, velocities
+            # modifies positions, velocities
+            dp, dv = eval_derivative(positions, velocities)
+            mp = positions + dt * dp * 0.5
+            mv = velocities + dt * dv * 0.5
+            dp, dv = eval_derivative(mp, mv)
+            positions += dt * dp
+            velocities += dt * dv 
+
+          def rk4(dt):
+            """Advances the positions and velocities by dt using the Runge-Kutta method."""
+            global positions, velocities
+            # modifies positions, velocities
+            k1p, k1v = eval_derivative(positions, velocities)
+            k2p, k2v = eval_derivative(positions + dt * k1p * 0.5, velocities + dt * k1v * 0.5)
+            k3p, k3v = eval_derivative(positions + dt * k2p * 0.5, velocities + dt * k2v * 0.5)
+            k4p, k4v = eval_derivative(positions + dt * k3p, velocities + dt * k3v)
+            positions += dt * (k1p + 2 * k2p + 2 * k3p + k4p) / 6
+            velocities += dt * (k1v + 2 * k2v + 2 * k3v + k4v) / 6
+
+          def step():
+            Q.fill(0)
+            Q_all.clear()
+            accumulate_forces(particles)
+            if integrator == 1:
+              explicit_euler(time_step)
+            elif integrator == 2:
+              mid_point(time_step)
+            else:
+              rk4(time_step)
+
+          def circle(x, y, r):
+            return { 'type': 'circle', 'x': x, 'y': y, 'r': r }
+          def segment(x1, y1, x2, y2):
+            return { 'type': 'segment', 'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2 }
+          def line(x1, y1, x2, y2):
+            return { 'type': 'line', 'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2 }
+          def funcx(func, x0, x1, n):
+            eval_func = lambdify(symbols("x"), func, "numpy")
+            return {
+                  'type': 'func',
+                  'xs': np.linspace(x0, x1, n).tolist(),
+                  'ys': [eval_func(x) for x in np.linspace(x0, x1, n)],
+                }
+          def funcy(func, y0, y1, n):
+            eval_func = lambdify(symbols("y"), func, "numpy")
+            return {
+                  'type': 'func',
+                  'xs': [eval_func(y) for y in np.linspace(y0, y1, n)],
+                  'ys': np.linspace(y0, y1, n).tolist(),
+                }
+          def convert_draw_exprs(input_draw_exprs):
+            circle_symbol = Function("circle")
+            circle_implemented = implemented_function(circle_symbol, circle)
+            segment_symbol = Function("segment")
+            segment_implemented = implemented_function(segment_symbol, segment)
+            line_symbol = Function("line")
+            line_implemented = implemented_function(line_symbol, line)
+            funcx_symbol = Function("funcx")
+            funcx_implemented = implemented_function(funcx_symbol, funcx)
+            funcy_symbol = Function("funcy")
+            funcy_implemented = implemented_function(funcy_symbol, funcy)
+
+            eval_draws = []
+            for draw_expr in input_draw_exprs:
+              draw_symbol = parse_expr(draw_expr, transformations=transformations)
+              draw_symbol = draw_symbol.replace(circle_symbol, circle_implemented)
+              draw_symbol = draw_symbol.replace(segment_symbol, segment_implemented)
+              draw_symbol = draw_symbol.replace(line_symbol, line_implemented)
+              # draw_symbol = draw_symbol.replace(funcx_symbol, funcx_implemented)
+              # draw_symbol = draw_symbol.replace(funcy_symbol, funcy_implemented)
+              if type(draw_symbol) == funcx_symbol:
+                evaluator = lambdify([position_symbols, velocity_symbols, symbols('x')], draw_symbol.args[0], 'numpy')
+                x0 = float(draw_symbol.args[1].evalf());
+                x1 = float(draw_symbol.args[2].evalf());
+                n = int(draw_symbol.args[3].evalf());
+                eval_draws.append(lambda position_symbols, velocity_symbols, evaluator=evaluator, x0=x0, x1=x1, n=n : {
+                  'type': 'func',
+                  'xs': np.linspace(x0, x1, n).tolist(),
+                  'ys': [evaluator(position_symbols, velocity_symbols, x) for x in np.linspace(x0, x1, n)],
+                })
+              elif type(draw_symbol) == funcy_symbol:
+                evaluator = lambdify([position_symbols, velocity_symbols, symbols('y')], draw_symbol.args[0], 'numpy')
+                y0 = float(draw_symbol.args[1].evalf());
+                y1 = float(draw_symbol.args[2].evalf());
+                n = int(draw_symbol.args[3].evalf());
+                eval_draws.append(lambda position_symbols, velocity_symbols, evaluator=evaluator, y0=y0, y1=y1, n=n : {
+                  'type': 'func',
+                  'xs': [evaluator(position_symbols, velocity_symbols, y) for y in np.linspace(y0, y1, n)],
+                  'ys': np.linspace(y0, y1, n).tolist(),
+                })
+              else:
+                particle_index = 0
+                for particle_js in particles_js:
+                  draw_symbol = draw_symbol.subs(symbols(particle_js.xName), position_symbols[particle_index * 2])
+                  draw_symbol = draw_symbol.subs(symbols(particle_js.yName), position_symbols[particle_index * 2 + 1])
+                  particle_index = particle_index + 1
+                eval_draw = lambdify([position_symbols, velocity_symbols], draw_symbol, 'numpy')
+                eval_draws.append(eval_draw)
+            return eval_draws
+
+          eval_draws = convert_draw_exprs(draw_exprs)
+          eval_static_draws = convert_draw_exprs(static_draw_exprs)
+
+          def draw():
+            return [eval_draw(positions, velocities) for eval_draw in eval_draws]
+
+          def run_batch():
+            results = []
+            for i in range(0, 100):
+              step()
+              draws = draw()
+              results.append({
+                'positions': positions.reshape(-1).tolist(),
+                'forces': Q_all.copy(),
+                'draws': draws,
+                'c': eval_C(positions).reshape(-1).tolist(),
+              })
+            return results
+          
+          def strip_time_dependency(s):
+            particle_index = 0
+            for particle_js in particles_js:
+              s = s.subs(position_symbols[particle_index * 2], symbols(particle_js.xName))
+              s = s.subs(position_symbols[particle_index * 2 + 1], symbols(particle_js.yName))
+              particle_index += 1
+            return s
+          {
+              'C': latex(strip_time_dependency(symbol_C)),
+              'Cdot': latex(strip_time_dependency(symbol_Cdot)),
+              'J': latex(strip_time_dependency(symbol_J)),
+              'Jdot': latex(strip_time_dependency(symbol_Jdot)),
+              'static_draws': [eval_static_draw(positions, velocities) for eval_static_draw in eval_static_draws]
+          }
+        `), {
+          particles_js: particles,
+          constraint_exprs: constraints,
+          draw_exprs: drawCommands,
+          static_draw_exprs: staticDrawCommands,
+          time_step: timeStep,
+          ks,
+          kd,
+          integrator,
+        });
+        currentInitializerPromise.then(result => {
+          // console.info(updateId + " done, current " + currentUpdateId);
+          if (updateId !== currentUpdateId) {
+            return;
+          }
+          renderDraws(result.static_draws, $svgStaticDraws, $svgStaticDrawsContainer);
+          $mainStatus.innerText = 'Status: Idle';
+          $mathOutput.innerText = `$$\\begin{aligned} C &= ${result.C} \\\\ \\dot C &= ${result.Cdot} \\\\ J &= ${result.J} \\\\ \\dot J &= ${result.Jdot} \\end{aligned}$$`;
+          MathJax.typeset([$mathOutput]);
+          shouldAnimate = true;
+        }).catch(error => {
+          if (updateId !== currentUpdateId) {
+            return;
+          }
+          $mainStatus.innerText = 'Status: Idle'
+          $errorOutput.style.display = 'block';
+          $errorOutput.innerText = 'Error: ' + error.message;
+        });
+      }
+
+      function animate() {
+        // console.warn(revertSpeed);
+        if (shouldAnimate) {
+          if (frames.length - currentFrameFloat < 100) {
+            if (batchUpdateId !== currentUpdateId) {
+              if (batchPromise !== null) {
+                batchPromise.cancel();
+              }
+              const updateId = currentUpdateId;
+              batchUpdateId = updateId;
+              // console.info("START");
+              batchPromise = evalPython('run_batch()');
+              $mainStatus.innerText = 'Status: Requesting more frames...'
+              $errorOutput.innerText = '';
+              $errorOutput.style.display = 'none';
+
+              // console.info('6666');
+              batchPromise.then(result => {
+                // console.info(updateId + "," + currentUpdateId);
+                if (updateId !== currentUpdateId) {
+                  return;
+                }
+                // console.info(result);
+                frames.push(...result);
+                framesUpdated();
+                // console.info(frames.length - currentFrame);
+                batchPromise = null;
+                batchUpdateId = null;
+                $mainStatus.innerText = 'Status: Idle';
+              }).catch(error => {
+                // console.error(error);
+                // console.error(updateId + "," + currentUpdateId);
+                if (updateId !== currentUpdateId) {
+                  return;
+                }
+                batchPromise = null;
+                batchUpdateId = null;
+                shouldAnimate = false;
+                $mainStatus.innerText = 'Status: Idle';
+                $errorOutput.innerText = 'Error: ' + error.message;
+                $errorOutput.style.display = 'block';
+              });
+            }
+          }
+          if (currentFrameFloat < frames.length) {
+            currentFrameFloat = currentFrameFloat + speed;
+            currentFrameFloat = Math.min(frames.length - 1, currentFrameFloat);
+            framesUpdated();
+            renderFrame(Math.floor(currentFrameFloat))
+          }
+        }
+        requestAnimationFrame(animate);
+      }
+      requestAnimationFrame(animate);
+
+      function isUnsafeNumber(x) {
+        return !Number.isFinite(x) || Number.isNaN(x);
+      }
+
+      function renderDraws(draws, $array, $container) {
+        $array.forEach($svgDraw => $svgDraw.remove());
+        $array.length = 0;
+        for (const draw of draws) {
+          switch (draw.type) {
+            case 'circle': {
+              if (isUnsafeNumber(draw.r) || isUnsafeNumber(draw.x) || isUnsafeNumber(draw.y)) {
+                break;
+              }
+              const $svgDraw = nsn('circle', {
+                class: 'svg-draw',
+                fill: 'none',
+                stroke: 'black',
+                'stroke-width': lineWidth,
+                r: draw.r,
+                cx: draw.x,
+                cy: -draw.y,
+              });
+              $container.append($svgDraw);
+              $array.push($svgDraw);
+              break;
+            }
+            case 'segment': {
+              if (isUnsafeNumber(draw.x1) || isUnsafeNumber(draw.y1) || isUnsafeNumber(draw.x2) || isUnsafeNumber(draw.y2)) {
+                break;
+              }
+              const $svgDraw = nsn('path', {
+                class: 'svg-draw',
+                fill: 'none',
+                stroke: 'black',
+                'stroke-width': lineWidth,
+                d: `M ${draw.x1} ${-draw.y1} L ${draw.x2} ${-draw.y2}`,
+              });
+              $container.append($svgDraw);
+              $array.push($svgDraw);
+              break;
+            }
+            case 'line': {
+              const dx = draw.x2 - draw.x1;
+              const dy = draw.y2 - draw.y1;
+              const length = Math.sqrt(dx * dx + dy * dy);
+              const multiplier = 10000 / length;
+              const x1 = draw.x1 + dx * multiplier;
+              const y1 = draw.y1 + dy * multiplier;
+              const x2 = draw.x2 - dx * multiplier;
+              const y2 = draw.y2 - dy * multiplier;
+              if (isUnsafeNumber(x1) || isUnsafeNumber(y1) || isUnsafeNumber(x2) || isUnsafeNumber(y2)) {
+                break;
+              }
+              const $svgDraw = nsn('path', {
+                class: 'svg-draw',
+                fill: 'none',
+                stroke: 'black',
+                'stroke-width': lineWidth,
+                d: `M ${x1} ${-y1} L ${x2} ${-y2}`,
+              });
+              $container.append($svgDraw);
+              $array.push($svgDraw);
+              break;
+            }
+            case 'func': {
+              if (draw.xs.length === 0) {
+                break;
+              }
+              let action = 'M';
+              let d = '';
+              for (let i = 0; i < draw.xs.length; i++) {
+                if (isUnsafeNumber(draw.xs[i]) || isUnsafeNumber(draw.ys[i])) {
+                  action = 'M';
+                  continue;
+                }
+                d += ` ${action} ${draw.xs[i]} ${-draw.ys[i]}`;
+                action = 'L';
+              }
+              d = d.trim();
+              if (d.length === 0) {
+                break;
+              }
+              const $svgDraw = nsn('path', {
+                class: 'svg-draw',
+                fill: 'none',
+                stroke: 'black',
+                'stroke-width': lineWidth,
+                d,
+              });
+              $container.append($svgDraw);
+              $array.push($svgDraw);
+              break;
+            }
+          }
+        }
+      }
+
+      const $speedInput = document.getElementById('speed-input');
+      const $speedLabel = document.getElementById('speed-label');
+      $speedInput.addEventListener('input', () => {
+        speed = +$speedInput.value;
+        $speedLabel.innerText = `Animation speed = ${speed.toFixed(2)}x`;
+        revertSpeed = null;
+      });
+
+      const $particlePositions = document.getElementById('particle-positions');
+      const $constraintErrorValues = document.getElementById('constraint-error-values');
+      function renderFrame(frameIndex) {
+        const frame = frames[frameIndex];
+        let exploded = false;
+        $svgPoints.forEach((point, i) => {
+          if (isSafeNumber(frame.positions[i * 2]) && isSafeNumber(frame.positions[i * 2 + 1])) {
+            point.setAttribute('cx', frame.positions[i * 2]);
+            point.setAttribute('cy', -frame.positions[i * 2 + 1]);
+          } else {
+            exploded = true;
+          }
+        });
+        if (exploded) {
+          $mainStatus.innerText = 'Status: Stopped due to instability.';
+          if (revertSpeed === null) {
+            revertSpeed = speed;
+          }
+          speed = 0;
+          $speedLabel.innerText = `Animation speed = ${speed.toFixed(2)}x`;
+          $speedInput.value = 0;
+          $errorOutput.style.display = 'block';
+          $errorOutput.innerText = 'Simulation paused due to instability.';
+        }
+        renderDraws(frame.draws, $svgDraws, $svgDrawsContainer);
+        $particlePositions.innerText = frame.positions.map(
+          (pos, index) => `${particles[Math.floor(index / 2)][((index % 2) === 0) ? 'xName' : 'yName']} = ${pos.toPrecision(8).substr(0, 8)}${((index % 2) === 0) ? ', ' : '\n'}`).join('');
+        $constraintErrorValues.innerText = frame.c.map((error, index) => `C${index + 1} = ${error.toPrecision(8).substr(0, 8)}`).join('\n');
+
+        const scale = pz.getTransform().scale;
+        const arrows = frame.forces.map(([index, forceX, forceY]) => [
+          frame.positions[index * 2],
+          frame.positions[index * 2 + 1],
+          forceX,
+          forceY,
+        ]);
+        const d = arrows.map(([x, y, dxdtv, dydtv]) => {
+          if (dxdtv === 0 && dydtv === 0) {
+            return '';
+          }
+          const length = Math.sqrt(dxdtv ** 2 + dydtv ** 2);
+          const p0x = x;
+          const p0y = -y;
+          const p1x = x + dxdtv / 20;
+          const p1y = -y - dydtv / 20;
+          const deltaX = p1x - p0x;
+          const deltaY = p1y - p0y;
+          const mag = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+          const nDeltaX = deltaX / mag * 8 / scale;
+          const nDeltaY = deltaY / mag * 8 / scale;
+          const p2x = p1x - nDeltaX - nDeltaY;
+          const p2y = p1y - nDeltaY + nDeltaX;
+          const p3x = p1x - nDeltaX + nDeltaY;
+          const p3y = p1y - nDeltaY - nDeltaX;
+          if ([p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y].some(x => Number.isNaN(x) || !Number.isFinite(x))) {
+            return '';
+          }
+          return `M ${p0x} ${p0y} L ${p1x} ${p1y} M ${p2x} ${p2y} L ${p1x} ${p1y} L ${p3x} ${p3y}`;
+        });
+        $vectors.setAttribute('d', d.join(' '));
+      }
+
+      const validCommandTypes = ['particle', 'constraint', 'draw'];
+      let oldDecorations = [];
+      function updateCpssl() {
+        const cpssl = cpsslEditor.getValue();
+        const lines = cpssl.split('\n');
+        particles.length = 0;
+        cpsslErrors.length = 0;
+        constraints.length = 0;
+        drawCommands.length = 0;
+        staticDrawCommands.length = 0;
+        let lineNumber = 0;
+        const names = new Set();
+        for (const lineRaw of lines) {
+          lineNumber++;
+          line = lineRaw.replace(/(?:#|\/\/).*$/, '').trim();
+          if (line.length === 0) {
+            continue;
+          }
+          const startColumn = lineRaw.indexOf(line[0]) + 1;
+          const endColumn = startColumn + line.length;
+          const [type, ...args] = line.split(/[ \t]+/);
+          if (!validCommandTypes.includes(type)) {
+            cpsslErrors.push({
+              startLineNumber: lineNumber,
+              startColumn,
+              endLineNumber: lineNumber,
+              endColumn: startColumn + type.length,
+              message: `Invalid command type: ${type}. It must be one of "particle", "constraint", or "draw".`,
+              severity: monaco.MarkerSeverity.Error,
+            });
+            continue;
+          }
+          let arg = args.join(' ').trim();
+          switch (type) {
+            case 'particle':
+              const match = /([a-zA-Z][a-zA-Z0-9]*)\s*,\s*([a-zA-Z][a-zA-Z0-9]*)\s+at\s+(-?[\d.]+)\s*,\s*(-?[\d.]+)(?:\s+with\s+mass\s*=\s*(-?[\d.]+))?$/.exec(arg);
+              if (match === null) {
+                cpsslErrors.push({
+                  startLineNumber: lineNumber,
+                  startColumn,
+                  endLineNumber: lineNumber,
+                  endColumn,
+                  message: `Invalid particle definition.`,
+                  severity: monaco.MarkerSeverity.Error,
+                });
+                continue;
+              }
+              if (names.has(match[1]) || names.has(match[2])) {
+                cpsslErrors.push({
+                  startLineNumber: lineNumber,
+                  startColumn,
+                  endLineNumber: lineNumber,
+                  endColumn,
+                  message: `Particle names must be unique.`,
+                  severity: monaco.MarkerSeverity.Error,
+                });
+                continue;
+              }
+              names.add(match[1]);
+              names.add(match[2]);
+              particles.push({
+                xName: match[1],
+                yName: match[2],
+                xInit: +(match[3]),
+                yInit: +(match[4]),
+                mass: match[5] === undefined ? 1 : Number(match[5]),
+              });
+              break;
+            case 'constraint':
+              if (arg.length === 0) {
+                cpsslErrors.push({
+                  startLineNumber: lineNumber,
+                  startColumn,
+                  endLineNumber: lineNumber,
+                  endColumn,
+                  message: `Invalid constraint.`,
+                  severity: monaco.MarkerSeverity.Error,
+                });
+                continue;
+              }
+              arg = arg.replace(/\^/g, '**');
+              if (arg.startsWith('auto ')) {
+                arg = arg.substr(5).trim();
+                if (arg.length === 0) {
+                  cpsslErrors.push({
+                    startLineNumber: lineNumber,
+                    startColumn,
+                    endLineNumber: lineNumber,
+                    endColumn,
+                    message: `Invalid constraint.`,
+                    severity: monaco.MarkerSeverity.Error
+                  });
+                  continue;
+                }
+                if (arg.indexOf('=') !== -1) {
+                  cpsslErrors.push({
+                    startLineNumber: lineNumber,
+                    startColumn,
+                    endLineNumber: lineNumber,
+                    endColumn,
+                    message: `An auto constraint cannot contain an equal sign. Its values at initial condition will be used as the rhs.`,
+                    severity: monaco.MarkerSeverity.Error,
+                  });
+                  continue;
+                }
+                constraints.push(arg);
+              } else {
+                if (arg.indexOf('=') === -1) {
+                  cpsslErrors.push({
+                    startLineNumber: lineNumber,
+                    startColumn,
+                    endLineNumber: lineNumber,
+                    endColumn,
+                    message: `A constraint must contain an equal sign.`,
+                    severity: monaco.MarkerSeverity.Error,
+                  });
+                  continue;
+                }
+                const split = arg.split('=');
+                if (split.length > 2) {
+                  cpsslErrors.push({
+                    startLineNumber: lineNumber,
+                    startColumn,
+                    endLineNumber: lineNumber,
+                    endColumn,
+                    message: `A constraint cannot have more than 1 equal signs.`,
+                    severity: monaco.MarkerSeverity.Error,
+                  });
+                  continue;
+                }
+                constraints.push(`Eq(${split[0]},${split[1]})`);
+              }
+              break;
+            case 'draw':
+              if (arg.length === 0) {
+                cpsslErrors.push({
+                  startLineNumber: lineNumber,
+                  startColumn,
+                  endLineNumber: lineNumber,
+                  endColumn,
+                  message: `Invalid draw command.`,
+                  severity: monaco.MarkerSeverity.Error
+                });
+                continue;
+              }
+              arg = arg.replace(/\^/g, '**');
+              if (arg.startsWith('static ')) {
+                arg = arg.substr(7).trim();
+                if (arg.length === 0) {
+                  cpsslErrors.push({
+                    startLineNumber: lineNumber,
+                    startColumn,
+                    endLineNumber: lineNumber,
+                    endColumn,
+                    message: `Invalid draw command.`,
+                    severity: monaco.MarkerSeverity.Error
+                  });
+                  continue;
+                }
+                staticDrawCommands.push(arg);
+              } else {
+                drawCommands.push(arg);
+              }
+              break;
+          }
+        }
+        monaco.editor.setModelMarkers(cpsslModel, 'owner' /* ??? */, cpsslErrors);
+        $systemEditorContainer.style.height = `${cpsslModel.getLineCount() * 19 + 19}px`;
+        cpsslEditor.layout();
+        $svgPoints.forEach($svgPoint => $svgPoint.remove());
+        $svgPoints.length = 0;
+        for (const particle of particles) {
+          const $svgPoint = nsn('circle', {
+            class: 'point',
+            fill: 'red',
+            stroke: 'none',
+            r: lineWidth * 2,
+            cx: particle.xInit,
+            cy: particle.yInit,
+          });
+          $pointsContainer.append($svgPoint);
+          $svgPoints.push($svgPoint);
+        }
+      }
+
+      cpsslEditor.onDidChangeModelContent(() => {
+        updateCpssl();
+        update();
+      });
+      updateCpssl();
+
+      function updateForces() {
+        forceFunction = forcesEditor.getValue();
+        $forcesEditorContainer.style.height = `${forcesModel.getLineCount() * 19 + 19}px`;
+        forcesEditor.layout();
+      }
+
+      forcesEditor.onDidChangeModelContent(() => {
+        updateForces();
+        update();
+      });
+      updateForces();
+      update();
+
+      let crosshairX = 0;
+      let crosshairY = 0;
+
+      let mouseX = 0;
+      let mouseY = 0;
+
+      const $crosshairPath = document.getElementById('crosshair-path');
+      const $crosshairX = document.getElementById('crosshair-x');
+      const $crosshairY = document.getElementById('crosshair-y');
+
+      function updateCrosshair() {
+        const transform = pz.getTransform();
+        crosshairX = (mouseX - transform.x) / transform.scale;
+        crosshairY = -(mouseY - transform.y) / transform.scale;
+        $crosshairX.textContent = `x: ${crosshairX.toPrecision(8)}`;
+        $crosshairY.textContent = `y: ${crosshairY.toPrecision(8)}`;
+        $crosshairX.setAttribute('x', mouseX + 5);
+        $crosshairX.setAttribute('y', mouseY - 20);
+        $crosshairY.setAttribute('x', mouseX + 5);
+        $crosshairY.setAttribute('y', mouseY - 5);
+        $crosshairPath.setAttribute('d', `M 0 ${mouseY} L ${$svg.clientWidth} ${mouseY} M ${mouseX} 0 L ${mouseX} ${$svg.clientHeight}`);
+      }
+
+      function updateGrid() {
+        // currentUpdateGridId++;
+        // const thisUpdateGridId = currentUpdateGridId;
+        const scale = pz.getTransform().scale;
+        const xLeft = -pz.getTransform().x / scale;
+        const xRight = xLeft + $svg.clientWidth / scale;
+        const yTop = -pz.getTransform().y / scale;
+        const yBottom = yTop + $svg.clientHeight / scale;
+        $axises.setAttribute('d', `M ${xLeft} 0 L ${xRight} 0 M 0 ${yBottom} L 0 ${yTop}`);
+      }
+
+      $svg.addEventListener('mousemove', event => {
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+        updateCrosshair();
+      });
+
+      const $hidePoints = document.getElementById('show-points');
+      $hidePoints.addEventListener('change', () => {
+        $panzoomRoot.classList.toggle('hide-points', !$hidePoints.checked);
+      });
+      const $showVectors = document.getElementById('show-vectors');
+      $showVectors.addEventListener('change', () => {
+        $panzoomRoot.classList.toggle('hide-vectors', !$showVectors.checked);
+      });
+      const $showAxises = document.getElementById('show-axises');
+      $showAxises.addEventListener('change', () => {
+        $panzoomRoot.classList.toggle('hide-axises', !$showAxises.checked);
+      });
+      const $showDynamicDraws = document.getElementById('show-dynamic-draws');
+      $showDynamicDraws.addEventListener('change', () => {
+        $panzoomRoot.classList.toggle('hide-dynamic-draws', !$showDynamicDraws.checked);
+      });
+      const $showStaticDraws = document.getElementById('show-static-draws');
+      $showStaticDraws.addEventListener('change', () => {
+        $panzoomRoot.classList.toggle('hide-static-draws', !$showStaticDraws.checked);
+      });
+      const $showCrosshair = document.getElementById('show-crosshair');
+      $showCrosshair.addEventListener('change', () => {
+        $crosshairPath.classList.toggle('hidden', !$showCrosshair.checked);
+        $crosshairX.classList.toggle('hidden', !$showCrosshair.checked);
+        $crosshairY.classList.toggle('hidden', !$showCrosshair.checked);
+      });
+      const $timeStepInput = document.getElementById('time-step-input');
+      $timeStepInput.addEventListener('input', () => {
+        timeStep = +$timeStepInput.value;
+        update();
+      });
+      const $resetSpeedButton = document.getElementById('reset-speed-button');
+      $resetSpeedButton.addEventListener('click', () => {
+        $speedInput.value = 1;
+        speed = 1;
+        $speedLabel.innerText = `Animation speed = ${speed.toFixed(2)}x`;
+        revertSpeed = null;
+      });
+      const $pauseButton = document.getElementById('pause-button');
+      $pauseButton.addEventListener('click', () => {
+        $speedInput.value = 0;
+        speed = 0;
+        $speedLabel.innerText = `Animation speed = ${speed.toFixed(2)}x`;
+        revertSpeed = null;
+      });
+      const $ksInput = document.getElementById('ks-input');
+      $ksInput.addEventListener('input', () => {
+        ks = +$ksInput.value;
+        update();
+      });
+      const $kdInput = document.getElementById('kd-input');
+      $kdInput.addEventListener('input', () => {
+        kd = +$kdInput.value;
+        update();
+      });
+      [1, 2, 3].forEach(i => {
+        const $radioInput = document.getElementById(`integrator-${i}`).addEventListener('click', () => {
+          integrator = i;
+          update();
+        });
+      });
+
+      const $restartWebWorkerButton = document.getElementById('restart-web-worker-button');
+      $restartWebWorkerButton.addEventListener('click', () => {
+        $loadText.innerText = 'Restarting Web Worker...';
+        $loadContainer.style.display = 'flex';
+        pyodideWorker.terminate();
+        pyodideWorker = new Worker(window.URL.createObjectURL(pyodideBlob));
+        evalQueue.forEach(({ reject }) => reject(new Error('Web worker restarted')));
+        evalQueue.length = 0;
+        evaluating = false;
+        updateQueueStatus();
+        loadWebWorker();
+      });
+    }
+    main();
+  </script>
+</body>
+
+</html>
